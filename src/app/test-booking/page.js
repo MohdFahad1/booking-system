@@ -12,8 +12,8 @@ export default function TestBookingPage() {
                 classId: 1,
                 primaryInstructorId: 1,
                 roomId: 1,
-                startTime: "2026-09-11T10:00:00Z",
-                endTime: "2026-09-11T11:15:00Z",
+                startTime: "2026-09-01T10:00:00Z",
+                endTime: "2026-09-01T11:15:00Z",
                 capacity: 1,
             });
 
@@ -31,8 +31,8 @@ export default function TestBookingPage() {
     async function createBooking() {
         try {
             const response = await axios.post("/api/bookings", {
-                memberId: 3,
-                sessionId: 3,
+                memberId: 1,
+                sessionId: 5,
             });
 
             setResult(response.data);
@@ -102,6 +102,28 @@ export default function TestBookingPage() {
         }
     }
 
+
+    async function markAttendance() {
+        try {
+            const response = await axios.patch(
+                "/api/bookings/5/attendance",
+                {
+                    status: "NO_SHOW",
+                note: "Member did not attend the session.",
+                }
+            );
+
+            setResult(response.data);
+        } catch (error) {
+            setResult(
+                error.response?.data || {
+                    success: false,
+                    error: "Something went wrong.",
+                }
+            );
+        }
+    }
+
     return (
         <main className="min-h-screen flex flex-col items-center justify-center gap-6 p-6">
             <div className="flex gap-4">
@@ -142,6 +164,14 @@ export default function TestBookingPage() {
                     className="rounded-md bg-red-700 px-6 py-3 text-white"
                 >
                     Cancel Booking 2
+                </button>
+
+
+                <button
+                    onClick={markAttendance}
+                    className="rounded-md bg-green-700 px-6 py-3 text-white"
+                >
+                    Mark Attended
                 </button>
             </div>
 
