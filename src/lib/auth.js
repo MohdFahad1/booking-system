@@ -41,3 +41,33 @@ export async function getCurrentUser() {
 
   return user;
 }
+
+export async function requireUser() {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    throw new Error("Authentication required.");
+  }
+
+  return user;
+}
+
+export async function requireStaff() {
+  const user = await requireUser();
+
+  if (user.role !== "STAFF") {
+    throw new Error("Staff access required.");
+  }
+
+  return user;
+}
+
+export async function requireInstructor() {
+  const user = await requireUser();
+
+  if (user.role !== "INSTRUCTOR") {
+    throw new Error("Instructor access required.");
+  }
+
+  return user;
+}
