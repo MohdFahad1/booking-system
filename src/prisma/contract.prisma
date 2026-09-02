@@ -1,0 +1,133 @@
+// use prisma-next
+
+model User {
+  id        Int      @id @default(autoincrement())
+  clerkId   String   @unique
+  email     String   @unique
+  name      String?
+  role      String
+  createdAt TimestamptzString @default(now())
+  updatedAt temporal.updatedAt()
+
+  instructor     Instructor?
+  bookingHistory BookingHistory[] @relation("HistoryActor")
+}
+
+model Member {
+  id             Int      @id @default(autoincrement())
+  name           String
+  email          String   @unique
+  membershipExpiryDate TimestamptzString
+  createdAt      TimestamptzString @default(now())
+  updatedAt      temporal.updatedAt()
+
+  bookings       Booking[]
+  alerts         MembershipAlert[]
+}
+
+model Instructor {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique
+  name      String
+  email     String   @unique
+  createdAt TimestamptzString @default(now())
+  updatedAt temporal.updatedAt()
+
+  user              User @relation(fields: [userId], references: [id])
+  primarySessions   Session[] @relation("PrimaryInstructor")
+  coSessions        SessionInstructor[]
+}
+
+model Room {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  createdAt TimestamptzString @default(now())
+  updatedAt temporal.updatedAt()
+
+  sessions Session[]
+}
+
+model Class {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  discipline  String
+  duration    Int
+  capacity    Int
+  archived    Boolean  @default(false)
+  createdAt   TimestamptzString @default(now())
+  updatedAt   temporal.updatedAt()
+
+  sessions    Session[]
+}
+
+model Session {
+  id                   Int      @id @default(autoincrement())
+  classId              Int
+  primaryInstructorId  Int
+  roomId               Int
+  startTime            TimestamptzString
+  endTime              TimestamptzString
+  duration             Int
+  capacity             Int
+  createdAt            TimestamptzString @default(now())
+  updatedAt            temporal.updatedAt()
+
+  class              Class @relation(fields: [classId], references: [id])
+  primaryInstructor  Instructor @relation("PrimaryInstructor", fields: [primaryInstructorId], references: [id])
+  room               Room @relation(fields: [roomId], references: [id])
+
+  coInstructors       SessionInstructor[]
+  bookings            Booking[]
+}
+
+model SessionInstructor {
+  sessionId    Int
+  instructorId Int
+
+  session      Session    @relation(fields: [sessionId], references: [id])
+  instructor   Instructor @relation(fields: [instructorId], references: [id])
+
+  @@id([sessionId, instructorId])
+}
+
+model Booking {
+  id        Int      @id @default(autoincrement())
+  memberId  Int
+  sessionId Int
+  status    String   @default("BOOKED")
+  createdAt TimestamptzString @default(now())
+  updatedAt temporal.updatedAt()
+
+  member          Member   @relation(fields: [memberId], references: [id])
+  session         Session  @relation(fields: [sessionId], references: [id])
+  history         BookingHistory[]
+
+  @@unique([memberId, sessionId])
+}
+
+model BookingHistory {
+  id          Int      @id @default(autoincrement())
+  bookingId   Int
+  actorUserId Int
+  action      String
+  oldStatus   String?
+  newStatus   String?
+  note        String?
+  createdAt   TimestamptzString @default(now())
+
+  booking     Booking @relation(fields: [bookingId], references: [id])
+  actor       User    @relation("HistoryActor", fields: [actorUserId], references: [id])
+}
+
+model MembershipAlert {
+  id          Int      @id @default(autoincrement())
+  memberId    Int
+  expiryDate  TimestamptzString
+  dismissedAt TimestamptzString?
+  createdAt   TimestamptzString @default(now())
+
+  member      Member @relation(fields: [memberId], references: [id])
+
+  @@unique([memberId, expiryDate])
+}
