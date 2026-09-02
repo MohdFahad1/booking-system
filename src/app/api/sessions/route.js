@@ -125,3 +125,46 @@ export async function POST(request) {
     );
   }
 }
+
+export async function GET() {
+  try {
+    await requireStaff();
+
+    const sessions = await db.orm.public.Session.all();
+
+    return Response.json({
+      success: true,
+      sessions,
+    });
+  } catch (error) {
+    console.error(error);
+
+    if (error.message === "Authentication required.") {
+      return Response.json(
+        {
+          success: false,
+          error: error.message,
+        },
+        { status: 401 }
+      );
+    }
+
+    if (error.message === "Staff access required.") {
+      return Response.json(
+        {
+          success: false,
+          error: error.message,
+        },
+        { status: 403 }
+      );
+    }
+
+    return Response.json(
+      {
+        success: false,
+        error: error.message,
+      },
+      { status: 500 }
+    );
+  }
+}
