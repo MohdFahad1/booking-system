@@ -109,9 +109,24 @@ export default function TestBookingPage() {
                 "/api/bookings/5/attendance",
                 {
                     status: "NO_SHOW",
-                note: "Member did not attend the session.",
+                    note: "Member did not attend the session.",
                 }
             );
+
+            setResult(response.data);
+        } catch (error) {
+            setResult(
+                error.response?.data || {
+                    success: false,
+                    error: "Something went wrong.",
+                }
+            );
+        }
+    }
+
+    async function getBookingHistory() {
+        try {
+            const response = await axios.get("/api/bookings/5/history");
 
             setResult(response.data);
         } catch (error) {
@@ -172,6 +187,13 @@ export default function TestBookingPage() {
                     className="rounded-md bg-green-700 px-6 py-3 text-white"
                 >
                     Mark Attended
+                </button>
+
+                <button
+                    onClick={getBookingHistory}
+                    className="rounded-md bg-purple-700 px-6 py-3 text-white"
+                >
+                    Get Booking History
                 </button>
             </div>
 
