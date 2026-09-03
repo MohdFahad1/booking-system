@@ -139,6 +139,112 @@ export default function TestBookingPage() {
         }
     }
 
+    // async function createSecondInstructor() {
+    //     try {
+    //         const response = await axios.post("/api/users/2", {
+    //             role: "INSTRUCTOR",
+    //         });
+
+    //         setResult(response.data);
+    //     } catch (error) {
+    //         setResult(
+    //             error.response?.data || {
+    //                 success: false,
+    //                 error: "Something went wrong.",
+    //             }
+    //         );
+    //     }
+    // }
+
+
+    // async function createSecondInstructorUser() {
+    //     try {
+    //         const response = await axios.post("/api/users", {
+    //             email: "instructor2@test.com",
+    //             name: "Second Instructor",
+    //             role: "INSTRUCTOR",
+    //         });
+
+    //         setResult(response.data);
+    //     } catch (error) {
+    //         setResult(
+    //             error.response?.data || {
+    //                 success: false,
+    //                 error: "Something went wrong.",
+    //             }
+    //         );
+    //     }
+    // }
+
+    async function createSecondInstructor() {
+  try {
+    const response = await axios.post("/api/test-instructor");
+
+    setResult(response.data);
+  } catch (error) {
+    setResult(
+      error.response?.data || {
+        success: false,
+        error: "Something went wrong.",
+      }
+    );
+  }
+}
+
+
+async function addCoInstructor() {
+  try {
+    const response = await axios.post("/api/sessions/2/instructors", {
+      instructorId: 2,
+    });
+
+    setResult(response.data);
+  } catch (error) {
+    setResult(
+      error.response?.data || {
+        success: false,
+        error: "Something went wrong.",
+      }
+    );
+  }
+}
+
+async function removeCoInstructor() {
+  try {
+    const response = await axios.delete("/api/sessions/2/instructors", {
+      data: {
+        instructorId: 2,
+      },
+    });
+
+    setResult(response.data);
+  } catch (error) {
+    setResult(
+      error.response?.data || {
+        success: false,
+        error: "Something went wrong.",
+      }
+    );
+  }
+}
+
+async function testPrimaryAsCoInstructor() {
+  try {
+    const response = await axios.post("/api/sessions/2/instructors", {
+      instructorId: 1,
+    });
+
+    setResult(response.data);
+  } catch (error) {
+    setResult(
+      error.response?.data || {
+        success: false,
+        error: "Something went wrong.",
+      }
+    );
+  }
+}
+
     return (
         <main className="min-h-screen flex flex-col items-center justify-center gap-6 p-6">
             <div className="flex gap-4">
@@ -195,6 +301,36 @@ export default function TestBookingPage() {
                 >
                     Get Booking History
                 </button>
+
+
+                <button
+  onClick={createSecondInstructor}
+  className="rounded-md bg-blue-700 px-6 py-3 text-white"
+>
+  Create Second Instructor
+</button>
+
+
+<button
+  onClick={addCoInstructor}
+  className="rounded-md bg-green-700 px-6 py-3 text-white"
+>
+  Add Co-Instructor
+</button>
+
+<button
+  onClick={removeCoInstructor}
+  className="rounded-md bg-red-700 px-6 py-3 text-white"
+>
+  Remove Co-Instructor
+</button>
+
+<button
+  onClick={testPrimaryAsCoInstructor}
+  className="rounded-md bg-yellow-600 px-6 py-3 text-white"
+>
+  Test Primary as Co-Instructor
+</button>
             </div>
 
             {result && (
