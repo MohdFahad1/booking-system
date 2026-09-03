@@ -69,3 +69,48 @@ export async function POST(request) {
     );
   }
 }
+
+export async function GET() {
+  try {
+    await requireStaff();
+
+    const rooms = await db.orm.public.Room
+      .orderBy((room) => room.name.asc())
+      .all();
+
+    return Response.json({
+      success: true,
+      rooms,
+    });
+  } catch (error) {
+    console.error(error);
+
+    if (error.message === "Authentication required.") {
+      return Response.json(
+        {
+          success: false,
+          error: error.message,
+        },
+        { status: 401 }
+      );
+    }
+
+    if (error.message === "Staff access required.") {
+      return Response.json(
+        {
+          success: false,
+          error: error.message,
+        },
+        { status: 403 }
+      );
+    }
+
+    return Response.json(
+      {
+        success: false,
+        error: error.message,
+      },
+      { status: 500 }
+    );
+  }
+}

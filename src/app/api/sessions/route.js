@@ -1,5 +1,5 @@
 // import { requireStaff } from "../../../lib/auth";
-import { requireUser } from "../../../lib/auth";
+import { requireUser, requireStaff } from "../../../lib/auth";
 import { db } from "../../../prisma/db";
 
 export async function POST(request) {
