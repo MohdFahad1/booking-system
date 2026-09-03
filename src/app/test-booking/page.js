@@ -307,9 +307,56 @@ export default function TestBookingPage() {
         }
     }
 
+    async function createRecurringSessions() {
+        try {
+            const response = await axios.post("/api/sessions/recurring", {
+                classId: 1,
+                primaryInstructorId: 1,
+                roomId: 1,
+                startTime: "2026-09-14T10:00:00.000Z",
+                endTime: "2026-09-14T11:15:00.000Z",
+                frequency: "WEEKLY",
+                occurrences: 3,
+            });
+
+            setResult(response.data);
+        } catch (error) {
+            setResult(
+                error.response?.data || {
+                    success: false,
+                    error: "Something went wrong.",
+                }
+            );
+        }
+    }
+
+
+    async function createDailyRecurringSessions() {
+        try {
+            const response = await axios.post("/api/sessions/recurring", {
+                classId: 1,
+                primaryInstructorId: 1,
+                roomId: 1,
+                startTime: "2026-10-05T10:00:00.000Z",
+                endTime: "2026-10-05T11:15:00.000Z",
+                frequency: "DAILY",
+                occurrences: 3,
+            });
+
+            setResult(response.data);
+        } catch (error) {
+            setResult(
+                error.response?.data || {
+                    success: false,
+                    error: "Something went wrong.",
+                }
+            );
+        }
+    }
+
     return (
         <main className="min-h-screen flex flex-col items-center justify-center gap-6 p-6">
-            <div className="flex gap-4">
+            <div className="flex gap-4 flex-wrap">
                 <button
                     onClick={createSession}
                     className="rounded-md bg-black px-6 py-3 text-white"
@@ -422,6 +469,14 @@ export default function TestBookingPage() {
                     className="rounded-md bg-indigo-700 px-6 py-3 text-white"
                 >
                     Search Bookings
+                </button>
+
+                <button className="cursor-pointer" onClick={createRecurringSessions}>
+                    Create Recurring Sessions
+                </button>
+
+                <button className="cursor-pointer" onClick={createDailyRecurringSessions}>
+                    Create Daily Recurring Sessions
                 </button>
             </div>
 
