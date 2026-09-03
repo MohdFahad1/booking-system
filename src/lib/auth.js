@@ -71,3 +71,21 @@ export async function requireInstructor() {
 
   return user;
 }
+
+
+export async function requireInstructorWithSessions() {
+  const user = await requireInstructor();
+
+  const instructor = await db.orm.public.Instructor
+    .where({ userId: user.id })
+    .first();
+
+  if (!instructor) {
+    throw new Error("Instructor profile not found.");
+  }
+
+  return {
+    user,
+    instructor,
+  };
+}

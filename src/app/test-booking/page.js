@@ -177,25 +177,93 @@ export default function TestBookingPage() {
     // }
 
     async function createSecondInstructor() {
+        try {
+            const response = await axios.post("/api/test-instructor");
+
+            setResult(response.data);
+        } catch (error) {
+            setResult(
+                error.response?.data || {
+                    success: false,
+                    error: "Something went wrong.",
+                }
+            );
+        }
+    }
+
+
+    async function addCoInstructor() {
+        try {
+            const response = await axios.post("/api/sessions/2/instructors", {
+                instructorId: 2,
+            });
+
+            setResult(response.data);
+        } catch (error) {
+            setResult(
+                error.response?.data || {
+                    success: false,
+                    error: "Something went wrong.",
+                }
+            );
+        }
+    }
+
+    async function removeCoInstructor() {
+        try {
+            const response = await axios.delete("/api/sessions/2/instructors", {
+                data: {
+                    instructorId: 2,
+                },
+            });
+
+            setResult(response.data);
+        } catch (error) {
+            setResult(
+                error.response?.data || {
+                    success: false,
+                    error: "Something went wrong.",
+                }
+            );
+        }
+    }
+
+    async function testPrimaryAsCoInstructor() {
+        try {
+            const response = await axios.post("/api/sessions/2/instructors", {
+                instructorId: 1,
+            });
+
+            setResult(response.data);
+        } catch (error) {
+            setResult(
+                error.response?.data || {
+                    success: false,
+                    error: "Something went wrong.",
+                }
+            );
+        }
+    }
+
+    async function getSessions() {
+        try {
+            const response = await axios.get("/api/sessions");
+
+            setResult(response.data);
+        } catch (error) {
+            setResult(
+                error.response?.data || {
+                    success: false,
+                    error: "Something went wrong.",
+                }
+            );
+        }
+    }
+
+    async function testInstructorEditSession() {
   try {
-    const response = await axios.post("/api/test-instructor");
-
-    setResult(response.data);
-  } catch (error) {
-    setResult(
-      error.response?.data || {
-        success: false,
-        error: "Something went wrong.",
-      }
-    );
-  }
-}
-
-
-async function addCoInstructor() {
-  try {
-    const response = await axios.post("/api/sessions/2/instructors", {
-      instructorId: 2,
+    const response = await axios.patch("/api/sessions/2", {
+      capacity: 10,
     });
 
     setResult(response.data);
@@ -209,13 +277,9 @@ async function addCoInstructor() {
   }
 }
 
-async function removeCoInstructor() {
+async function testInstructorDeleteSession() {
   try {
-    const response = await axios.delete("/api/sessions/2/instructors", {
-      data: {
-        instructorId: 2,
-      },
-    });
+    const response = await axios.delete("/api/sessions/2");
 
     setResult(response.data);
   } catch (error) {
@@ -226,24 +290,7 @@ async function removeCoInstructor() {
       }
     );
   }
-}
-
-async function testPrimaryAsCoInstructor() {
-  try {
-    const response = await axios.post("/api/sessions/2/instructors", {
-      instructorId: 1,
-    });
-
-    setResult(response.data);
-  } catch (error) {
-    setResult(
-      error.response?.data || {
-        success: false,
-        error: "Something went wrong.",
-      }
-    );
-  }
-}
+}   
 
     return (
         <main className="min-h-screen flex flex-col items-center justify-center gap-6 p-6">
@@ -304,32 +351,55 @@ async function testPrimaryAsCoInstructor() {
 
 
                 <button
-  onClick={createSecondInstructor}
-  className="rounded-md bg-blue-700 px-6 py-3 text-white"
+                    onClick={createSecondInstructor}
+                    className="rounded-md bg-blue-700 px-6 py-3 text-white"
+                >
+                    Create Second Instructor
+                </button>
+
+
+                <button
+                    onClick={addCoInstructor}
+                    className="rounded-md bg-green-700 px-6 py-3 text-white"
+                >
+                    Add Co-Instructor
+                </button>
+
+                <button
+                    onClick={removeCoInstructor}
+                    className="rounded-md bg-red-700 px-6 py-3 text-white"
+                >
+                    Remove Co-Instructor
+                </button>
+
+                <button
+                    onClick={testPrimaryAsCoInstructor}
+                    className="rounded-md bg-yellow-600 px-6 py-3 text-white"
+                >
+                    Test Primary as Co-Instructor
+                </button>
+
+
+                <button
+                    onClick={getSessions}
+                    className="rounded-md bg-indigo-700 px-6 py-3 text-white"
+                >
+                    Get Sessions
+                </button>
+
+
+                <button
+  onClick={testInstructorEditSession}
+  className="rounded-md bg-orange-600 px-6 py-3 text-white"
 >
-  Create Second Instructor
+  Test Instructor Edit Session
 </button>
 
-
 <button
-  onClick={addCoInstructor}
-  className="rounded-md bg-green-700 px-6 py-3 text-white"
+  onClick={testInstructorDeleteSession}
+  className="rounded-md bg-red-600 px-6 py-3 text-white"
 >
-  Add Co-Instructor
-</button>
-
-<button
-  onClick={removeCoInstructor}
-  className="rounded-md bg-red-700 px-6 py-3 text-white"
->
-  Remove Co-Instructor
-</button>
-
-<button
-  onClick={testPrimaryAsCoInstructor}
-  className="rounded-md bg-yellow-600 px-6 py-3 text-white"
->
-  Test Primary as Co-Instructor
+  Test Instructor Delete Session
 </button>
             </div>
 

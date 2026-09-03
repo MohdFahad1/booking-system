@@ -1,9 +1,36 @@
-import { requireStaff } from "../../../../lib/auth";
+import { requireUser } from "../../../../lib/auth";
 import { db } from "../../../../prisma/db";
+
+async function canInstructorAccessSession(instructorId, sessionId) {
+  const session = await db.orm.public.Session
+    .where({ id: sessionId })
+    .first();
+
+  if (!session) {
+    return null;
+  }
+
+  if (session.primaryInstructorId === instructorId) {
+    return session;
+  }
+
+  const coInstructor = await db.orm.public.SessionInstructor
+    .where({
+      sessionId,
+      instructorId,
+    })
+    .first();
+
+  if (coInstructor) {
+    return session;
+  }
+
+  return false;
+}
 
 export async function PATCH(request, { params }) {
   try {
-    await requireStaff();
+    const user = await requireUser();
 
     const { id } = await params;
     const sessionId = Number(id);
@@ -29,6 +56,55 @@ export async function PATCH(request, { params }) {
           error: "Session not found.",
         },
         { status: 404 }
+      );
+    }
+
+    if (user.role === "INSTRUCTOR") {
+      const instructor = await db.orm.public.Instructor
+        .where({ userId: user.id })
+        .first();
+
+      if (!instructor) {
+        return Response.json(
+          {
+            success: false,
+            error: "Instructor profile not found.",
+          },
+          { status: 404 }
+        );
+      }
+
+      const access = await canInstructorAccessSession(
+        instructor.id,
+        sessionId
+      );
+
+      if (!access) {
+        return Response.json(
+          {
+            success: false,
+            error: "You do not have access to this session.",
+          },
+          { status: 403 }
+        );
+      }
+
+      return Response.json(
+        {
+          success: false,
+          error: "Instructors cannot edit sessions.",
+        },
+        { status: 403 }
+      );
+    }
+
+    if (user.role !== "STAFF") {
+      return Response.json(
+        {
+          success: false,
+          error: "Access denied.",
+        },
+        { status: 403 }
       );
     }
 
@@ -148,16 +224,6 @@ export async function PATCH(request, { params }) {
       );
     }
 
-    if (error.message === "Staff access required.") {
-      return Response.json(
-        {
-          success: false,
-          error: error.message,
-        },
-        { status: 403 }
-      );
-    }
-
     return Response.json(
       {
         success: false,
@@ -170,7 +236,17 @@ export async function PATCH(request, { params }) {
 
 export async function DELETE(request, { params }) {
   try {
-    await requireStaff();
+    const user = await requireUser();
+
+    if (user.role !== "STAFF") {
+      return Response.json(
+        {
+          success: false,
+          error: "Staff access required.",
+        },
+        { status: 403 }
+      );
+    }
 
     const { id } = await params;
     const sessionId = Number(id);
@@ -217,16 +293,6 @@ export async function DELETE(request, { params }) {
           error: error.message,
         },
         { status: 401 }
-      );
-    }
-
-    if (error.message === "Staff access required.") {
-      return Response.json(
-        {
-          success: false,
-          error: error.message,
-        },
-        { status: 403 }
       );
     }
 

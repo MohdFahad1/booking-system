@@ -1,4 +1,5 @@
-import { requireStaff } from "../../../lib/auth";
+// import { requireStaff } from "../../../lib/auth";
+import { requireUser } from "../../../lib/auth";
 import { db } from "../../../prisma/db";
 
 export async function POST(request) {
@@ -128,14 +129,86 @@ export async function POST(request) {
 
 export async function GET() {
   try {
-    await requireStaff();
+    const user = await requireUser();
 
-    const sessions = await db.orm.public.Session.all();
+    if (user.role === "STAFF") {
+      const sessions = await db.orm.public.Session.all();
 
-    return Response.json({
-      success: true,
-      sessions,
-    });
+      return Response.json({
+        success: true,
+        sessions,
+      });
+    }
+
+    if (user.role === "INSTRUCTOR") {
+      const instructor = await db.orm.public.Instructor
+        .where({ userId: user.id })
+        .first();
+
+      if (!instructor) {
+        return Response.json(
+          {
+            success: false,
+            error: "Instructor profile not found.",
+          },
+          { status: 404 }
+        );
+      }
+
+      const primarySessions = await db.orm.public.Session
+        .where({
+          primaryInstructorId: instructor.id,
+        })
+        .all();
+
+      const coInstructorAssignments =
+        await db.orm.public.SessionInstructor
+          .where({
+            instructorId: instructor.id,
+          })
+          .all();
+
+      const coSessionIds = coInstructorAssignments.map(
+        (assignment) => assignment.sessionId
+      );
+
+      const coSessions = [];
+
+      for (const sessionId of coSessionIds) {
+        const session = await db.orm.public.Session
+          .where({ id: sessionId })
+          .first();
+
+        if (session) {
+          coSessions.push(session);
+        }
+      }
+
+      const sessionsMap = new Map();
+
+      for (const session of primarySessions) {
+        sessionsMap.set(session.id, session);
+      }
+
+      for (const session of coSessions) {
+        sessionsMap.set(session.id, session);
+      }
+
+      const sessions = Array.from(sessionsMap.values());
+
+      return Response.json({
+        success: true,
+        sessions,
+      });
+    }
+
+    return Response.json(
+      {
+        success: false,
+        error: "Access denied.",
+      },
+      { status: 403 }
+    );
   } catch (error) {
     console.error(error);
 
@@ -146,16 +219,6 @@ export async function GET() {
           error: error.message,
         },
         { status: 401 }
-      );
-    }
-
-    if (error.message === "Staff access required.") {
-      return Response.json(
-        {
-          success: false,
-          error: error.message,
-        },
-        { status: 403 }
       );
     }
 
