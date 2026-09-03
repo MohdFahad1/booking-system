@@ -255,12 +255,10 @@ export default function SessionsPage() {
             }
           }}
         >
-          <DialogTrigger asChild>
-            <Button onClick={openCreateDialog}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Session
-            </Button>
-          </DialogTrigger>
+          <DialogTrigger render={<Button />} onClick={openCreateDialog}>
+    <Plus className="mr-2 h-4 w-4" />
+    Add Session
+</DialogTrigger>
 
           <DialogContent className="sm:max-w-lg">
             <DialogHeader>
