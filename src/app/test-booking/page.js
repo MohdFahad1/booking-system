@@ -388,6 +388,23 @@ export default function TestBookingPage() {
         }
     }
 
+    async function dismissMembershipAlert() {
+        try {
+            const response = await axios.patch(
+                "/api/membership-alerts/1"
+            );
+
+            setResult(response.data);
+        } catch (error) {
+            setResult(
+                error.response?.data || {
+                    success: false,
+                    error: "Something went wrong.",
+                }
+            );
+        }
+    }
+
     return (
         <main className="min-h-screen flex flex-col items-center justify-center gap-6 p-6">
             <div className="flex gap-4 flex-wrap">
@@ -515,6 +532,11 @@ export default function TestBookingPage() {
 
                 <button onClick={exportBookingsCsv} className="rounded-md bg-red-600 px-6 py-3 text-white cursor-pointer">
                     Export Bookings CSV
+                </button>
+
+
+                <button onClick={dismissMembershipAlert} className="rounded-md bg-yellow-600 px-6 py-3 text-white">
+                    Dismiss Membership Alert
                 </button>
             </div>
 
