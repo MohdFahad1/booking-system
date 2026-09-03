@@ -267,11 +267,9 @@ export default function ClassesPage() {
               }
             }}
           >
-            <DialogTrigger asChild>
-              <Button onClick={openCreateDialog}>
-                <Plus className="mr-2 h-4 w-4" />
+            <DialogTrigger render={<Button />}>
+              <Plus className="mr-2 h-4 w-4" />
                 Create Class
-              </Button>
             </DialogTrigger>
 
             <DialogContent className="sm:max-w-lg">
