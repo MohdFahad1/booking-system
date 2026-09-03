@@ -261,36 +261,51 @@ export default function TestBookingPage() {
     }
 
     async function testInstructorEditSession() {
-  try {
-    const response = await axios.patch("/api/sessions/2", {
-      capacity: 10,
-    });
+        try {
+            const response = await axios.patch("/api/sessions/2", {
+                capacity: 10,
+            });
 
-    setResult(response.data);
-  } catch (error) {
-    setResult(
-      error.response?.data || {
-        success: false,
-        error: "Something went wrong.",
-      }
-    );
-  }
-}
+            setResult(response.data);
+        } catch (error) {
+            setResult(
+                error.response?.data || {
+                    success: false,
+                    error: "Something went wrong.",
+                }
+            );
+        }
+    }
 
-async function testInstructorDeleteSession() {
-  try {
-    const response = await axios.delete("/api/sessions/2");
+    async function testInstructorDeleteSession() {
+        try {
+            const response = await axios.delete("/api/sessions/2");
 
-    setResult(response.data);
-  } catch (error) {
-    setResult(
-      error.response?.data || {
-        success: false,
-        error: "Something went wrong.",
-      }
-    );
-  }
-}   
+            setResult(response.data);
+        } catch (error) {
+            setResult(
+                error.response?.data || {
+                    success: false,
+                    error: "Something went wrong.",
+                }
+            );
+        }
+    }
+
+    async function searchBookings() {
+        try {
+            const response = await axios.get("/api/bookings/search");
+
+            setResult(response.data);
+        } catch (error) {
+            setResult(
+                error.response?.data || {
+                    success: false,
+                    error: "Something went wrong.",
+                }
+            );
+        }
+    }
 
     return (
         <main className="min-h-screen flex flex-col items-center justify-center gap-6 p-6">
@@ -389,18 +404,25 @@ async function testInstructorDeleteSession() {
 
 
                 <button
-  onClick={testInstructorEditSession}
-  className="rounded-md bg-orange-600 px-6 py-3 text-white"
->
-  Test Instructor Edit Session
-</button>
+                    onClick={testInstructorEditSession}
+                    className="rounded-md bg-orange-600 px-6 py-3 text-white"
+                >
+                    Test Instructor Edit Session
+                </button>
 
-<button
-  onClick={testInstructorDeleteSession}
-  className="rounded-md bg-red-600 px-6 py-3 text-white"
->
-  Test Instructor Delete Session
-</button>
+                <button
+                    onClick={testInstructorDeleteSession}
+                    className="rounded-md bg-red-600 px-6 py-3 text-white"
+                >
+                    Test Instructor Delete Session
+                </button>
+
+                <button
+                    onClick={searchBookings}
+                    className="rounded-md bg-indigo-700 px-6 py-3 text-white"
+                >
+                    Search Bookings
+                </button>
             </div>
 
             {result && (
