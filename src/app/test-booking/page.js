@@ -354,6 +354,40 @@ export default function TestBookingPage() {
         }
     }
 
+    async function exportBookingsCsv() {
+        try {
+            const response = await axios.get("/api/bookings/export", {
+                responseType: "blob",
+            });
+
+            const blob = new Blob([response.data], {
+                type: "text/csv;charset=utf-8;",
+            });
+
+            const url = window.URL.createObjectURL(blob);
+
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = "bookings.csv";
+
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+
+            window.URL.revokeObjectURL(url);
+
+            setResult({
+                success: true,
+                message: "Bookings CSV exported successfully.",
+            });
+        } catch (error) {
+            setResult({
+                success: false,
+                error: "CSV export failed.",
+            });
+        }
+    }
+
     return (
         <main className="min-h-screen flex flex-col items-center justify-center gap-6 p-6">
             <div className="flex gap-4 flex-wrap">
@@ -471,12 +505,16 @@ export default function TestBookingPage() {
                     Search Bookings
                 </button>
 
-                <button className="cursor-pointer" onClick={createRecurringSessions}>
+                <button className="rounded-md bg-orange-600 px-6 py-3 text-white cursor-pointer" onClick={createRecurringSessions}>
                     Create Recurring Sessions
                 </button>
 
-                <button className="cursor-pointer" onClick={createDailyRecurringSessions}>
+                <button onClick={createDailyRecurringSessions} className="rounded-md bg-indigo-700 px-6 py-3 text-white cursor-pointer">
                     Create Daily Recurring Sessions
+                </button>
+
+                <button onClick={exportBookingsCsv} className="rounded-md bg-red-600 px-6 py-3 text-white cursor-pointer">
+                    Export Bookings CSV
                 </button>
             </div>
 
