@@ -2,12 +2,7 @@
 
 import { useEffect, useState } from "react";
 import axios from "axios";
-import {
-  CalendarDays,
-  Pencil,
-  Plus,
-  Trash2,
-} from "lucide-react";
+import { CalendarDays, Pencil, Plus, Trash2, Users } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -41,6 +36,10 @@ export default function SessionsPage() {
   const [classes, setClasses] = useState([]);
   const [instructors, setInstructors] = useState([]);
   const [rooms, setRooms] = useState([]);
+
+  const [coInstructorOpen, setCoInstructorOpen] = useState(false);
+  const [selectedSession, setSelectedSession] = useState(null);
+  const [selectedCoInstructor, setSelectedCoInstructor] = useState("");
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -90,10 +89,7 @@ export default function SessionsPage() {
         setRooms([]);
       }
     } catch (err) {
-      setError(
-        err.response?.data?.error ||
-          "Failed to load sessions."
-      );
+      setError(err.response?.data?.error || "Failed to load sessions.");
     } finally {
       setLoading(false);
     }
@@ -186,10 +182,7 @@ export default function SessionsPage() {
       };
 
       if (editingSession) {
-        await axios.patch(
-          `/api/sessions/${editingSession.id}`,
-          payload
-        );
+        await axios.patch(`/api/sessions/${editingSession.id}`, payload);
       } else {
         await axios.post("/api/sessions", payload);
       }
@@ -198,16 +191,13 @@ export default function SessionsPage() {
       resetForm();
       await loadData();
     } catch (err) {
-      setError(
-        err.response?.data?.error ||
-          "Failed to save session."
-      );
+      setError(err.response?.data?.error || "Failed to save session.");
     }
   }
 
   async function handleDelete(sessionId) {
     const confirmed = window.confirm(
-      "Are you sure you want to delete this session?"
+      "Are you sure you want to delete this session?",
     );
 
     if (!confirmed) {
@@ -221,10 +211,66 @@ export default function SessionsPage() {
 
       await loadData();
     } catch (err) {
-      setError(
-        err.response?.data?.error ||
-          "Failed to delete session."
+      setError(err.response?.data?.error || "Failed to delete session.");
+    }
+  }
+
+  function openCoInstructorDialog(session) {
+    setSelectedSession(session);
+    setSelectedCoInstructor("");
+    setCoInstructorOpen(true);
+  }
+
+  async function handleAddCoInstructor() {
+    if (!selectedSession || !selectedCoInstructor) {
+      return;
+    }
+
+    try {
+      setError("");
+
+      await axios.post(`/api/sessions/${selectedSession.id}/instructors`, {
+        instructorId: Number(selectedCoInstructor),
+      });
+
+      setSelectedCoInstructor("");
+      await loadData();
+
+      const response = await axios.get("/api/sessions");
+      const updatedSession = (response.data.sessions || []).find(
+        (item) => item.id === selectedSession.id,
       );
+
+      setSelectedSession(updatedSession || selectedSession);
+    } catch (err) {
+      setError(err.response?.data?.error || "Failed to add co-instructor.");
+    }
+  }
+
+  async function handleRemoveCoInstructor(instructorId) {
+    if (!selectedSession) {
+      return;
+    }
+
+    try {
+      setError("");
+
+      await axios.delete(`/api/sessions/${selectedSession.id}/instructors`, {
+        data: {
+          instructorId,
+        },
+      });
+
+      await loadData();
+
+      const response = await axios.get("/api/sessions");
+      const updatedSession = (response.data.sessions || []).find(
+        (item) => item.id === selectedSession.id,
+      );
+
+      setSelectedSession(updatedSession || selectedSession);
+    } catch (err) {
+      setError(err.response?.data?.error || "Failed to remove co-instructor.");
     }
   }
 
@@ -235,9 +281,7 @@ export default function SessionsPage() {
           <div className="flex items-center gap-2">
             <CalendarDays className="h-6 w-6" />
 
-            <h1 className="text-2xl font-bold">
-              Sessions
-            </h1>
+            <h1 className="text-2xl font-bold">Sessions</h1>
           </div>
 
           <p className="mt-1 text-sm text-muted-foreground">
@@ -256,42 +300,35 @@ export default function SessionsPage() {
           }}
         >
           <DialogTrigger render={<Button />} onClick={openCreateDialog}>
-    <Plus className="mr-2 h-4 w-4" />
-    Add Session
-</DialogTrigger>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Session
+          </DialogTrigger>
 
           <DialogContent className="sm:max-w-lg">
             <DialogHeader>
               <DialogTitle>
-                {editingSession
-                  ? "Edit Session"
-                  : "Create Session"}
+                {editingSession ? "Edit Session" : "Create Session"}
               </DialogTitle>
             </DialogHeader>
 
-            <form
-              onSubmit={handleSubmit}
-              className="space-y-4"
-            >
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label>Class</Label>
 
                 <Select
                   value={form.classId}
-                  onValueChange={(value) =>
-                    updateField("classId", value)
-                  }
+                  onValueChange={(value) => updateField("classId", value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select class" />
                   </SelectTrigger>
 
-                  <SelectContent className="z-[100] max-h-60" alignItemWithTrigger={false}>
+                  <SelectContent
+                    className="z-[100] max-h-60"
+                    alignItemWithTrigger={false}
+                  >
                     {classes.map((item) => (
-                      <SelectItem
-                        key={item.id}
-                        value={String(item.id)}
-                      >
+                      <SelectItem key={item.id} value={String(item.id)}>
                         {item.title}
                       </SelectItem>
                     ))}
@@ -305,22 +342,19 @@ export default function SessionsPage() {
                 <Select
                   value={form.primaryInstructorId}
                   onValueChange={(value) =>
-                    updateField(
-                      "primaryInstructorId",
-                      value
-                    )
+                    updateField("primaryInstructorId", value)
                   }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select instructor" />
                   </SelectTrigger>
 
-                  <SelectContent className="z-[100] max-h-60" alignItemWithTrigger={false}>
+                  <SelectContent
+                    className="z-[100] max-h-60"
+                    alignItemWithTrigger={false}
+                  >
                     {instructors.map((item) => (
-                      <SelectItem
-                        key={item.id}
-                        value={String(item.id)}
-                      >
+                      <SelectItem key={item.id} value={String(item.id)}>
                         {item.name}
                       </SelectItem>
                     ))}
@@ -333,20 +367,18 @@ export default function SessionsPage() {
 
                 <Select
                   value={form.roomId}
-                  onValueChange={(value) =>
-                    updateField("roomId", value)
-                  }
+                  onValueChange={(value) => updateField("roomId", value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select room" />
                   </SelectTrigger>
 
-                  <SelectContent className="z-[100] max-h-60" alignItemWithTrigger={false}>
+                  <SelectContent
+                    className="z-[100] max-h-60"
+                    alignItemWithTrigger={false}
+                  >
                     {rooms.map((item) => (
-                      <SelectItem
-                        key={item.id}
-                        value={String(item.id)}
-                      >
+                      <SelectItem key={item.id} value={String(item.id)}>
                         {item.name}
                       </SelectItem>
                     ))}
@@ -356,38 +388,28 @@ export default function SessionsPage() {
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="startTime">
-                    Start Time
-                  </Label>
+                  <Label htmlFor="startTime">Start Time</Label>
 
                   <Input
                     id="startTime"
                     type="datetime-local"
                     value={form.startTime}
                     onChange={(event) =>
-                      updateField(
-                        "startTime",
-                        event.target.value
-                      )
+                      updateField("startTime", event.target.value)
                     }
                     required
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="endTime">
-                    End Time
-                  </Label>
+                  <Label htmlFor="endTime">End Time</Label>
 
                   <Input
                     id="endTime"
                     type="datetime-local"
                     value={form.endTime}
                     onChange={(event) =>
-                      updateField(
-                        "endTime",
-                        event.target.value
-                      )
+                      updateField("endTime", event.target.value)
                     }
                     required
                   />
@@ -396,9 +418,7 @@ export default function SessionsPage() {
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="duration">
-                    Duration (minutes)
-                  </Label>
+                  <Label htmlFor="duration">Duration (minutes)</Label>
 
                   <Input
                     id="duration"
@@ -406,19 +426,14 @@ export default function SessionsPage() {
                     min="1"
                     value={form.duration}
                     onChange={(event) =>
-                      updateField(
-                        "duration",
-                        event.target.value
-                      )
+                      updateField("duration", event.target.value)
                     }
                     required
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="capacity">
-                    Capacity
-                  </Label>
+                  <Label htmlFor="capacity">Capacity</Label>
 
                   <Input
                     id="capacity"
@@ -426,10 +441,7 @@ export default function SessionsPage() {
                     min="1"
                     value={form.capacity}
                     onChange={(event) =>
-                      updateField(
-                        "capacity",
-                        event.target.value
-                      )
+                      updateField("capacity", event.target.value)
                     }
                     required
                   />
@@ -437,9 +449,7 @@ export default function SessionsPage() {
               </div>
 
               <Button type="submit" className="w-full">
-                {editingSession
-                  ? "Update Session"
-                  : "Create Session"}
+                {editingSession ? "Update Session" : "Create Session"}
               </Button>
             </form>
           </DialogContent>
@@ -463,41 +473,31 @@ export default function SessionsPage() {
               <TableHead>End</TableHead>
               <TableHead>Capacity</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="text-right">
-                Actions
-              </TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
 
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell
-                  colSpan={8}
-                  className="h-24 text-center"
-                >
+                <TableCell colSpan={8} className="h-24 text-center">
                   Loading sessions...
                 </TableCell>
               </TableRow>
             ) : sessions.length === 0 ? (
               <TableRow>
-                <TableCell
-                  colSpan={8}
-                  className="h-24 text-center"
-                >
+                <TableCell colSpan={8} className="h-24 text-center">
                   No sessions found.
                 </TableCell>
               </TableRow>
             ) : (
               sessions.map((session) => {
-                const isPast =
-                  new Date(session.endTime) < new Date();
+                const isPast = new Date(session.endTime) < new Date();
 
                 return (
                   <TableRow key={session.id}>
                     <TableCell className="font-medium">
-                      {session.class?.title ||
-                        `Class #${session.classId}`}
+                      {session.class?.title || `Class #${session.classId}`}
                     </TableCell>
 
                     <TableCell>
@@ -506,30 +506,17 @@ export default function SessionsPage() {
                     </TableCell>
 
                     <TableCell>
-                      {session.room?.name ||
-                        `Room #${session.roomId}`}
+                      {session.room?.name || `Room #${session.roomId}`}
                     </TableCell>
 
-                    <TableCell>
-                      {formatDate(session.startTime)}
-                    </TableCell>
+                    <TableCell>{formatDate(session.startTime)}</TableCell>
+
+                    <TableCell>{formatDate(session.endTime)}</TableCell>
+
+                    <TableCell>{session.capacity}</TableCell>
 
                     <TableCell>
-                      {formatDate(session.endTime)}
-                    </TableCell>
-
-                    <TableCell>
-                      {session.capacity}
-                    </TableCell>
-
-                    <TableCell>
-                      <Badge
-                        variant={
-                          isPast
-                            ? "secondary"
-                            : "default"
-                        }
-                      >
+                      <Badge variant={isPast ? "secondary" : "default"}>
                         {isPast ? "Past" : "Upcoming"}
                       </Badge>
                     </TableCell>
@@ -539,9 +526,16 @@ export default function SessionsPage() {
                         <Button
                           variant="outline"
                           size="icon"
-                          onClick={() =>
-                            openEditDialog(session)
-                          }
+                          onClick={() => openCoInstructorDialog(session)}
+                          title="Manage Instructors"
+                        >
+                          <Users className="h-4 w-4" />
+                        </Button>
+
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => openEditDialog(session)}
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -549,9 +543,7 @@ export default function SessionsPage() {
                         <Button
                           variant="destructive"
                           size="icon"
-                          onClick={() =>
-                            handleDelete(session.id)
-                          }
+                          onClick={() => handleDelete(session.id)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -564,6 +556,94 @@ export default function SessionsPage() {
           </TableBody>
         </Table>
       </div>
+
+      <Dialog open={coInstructorOpen} onOpenChange={setCoInstructorOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Manage Co-Instructors</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-5">
+            <div>
+              <p className="text-sm text-muted-foreground">
+                Session #{selectedSession?.id}
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Add Co-Instructor</Label>
+
+              <div className="flex gap-2">
+                <Select
+                  value={selectedCoInstructor}
+                  onValueChange={setSelectedCoInstructor}
+                >
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Select instructor" />
+                  </SelectTrigger>
+
+                  <SelectContent
+                    className="z-[100] max-h-60"
+                    alignItemWithTrigger={false}
+                  >
+                    {instructors.map((instructor) => (
+                      <SelectItem
+                        key={instructor.id}
+                        value={String(instructor.id)}
+                      >
+                        {instructor.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Button
+                  type="button"
+                  onClick={handleAddCoInstructor}
+                  disabled={!selectedCoInstructor}
+                >
+                  Add
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <Label>Current Co-Instructors</Label>
+
+              {selectedSession?.coInstructors?.length ? (
+                <div className="space-y-2">
+                  {selectedSession.coInstructors.map((item) => (
+                    <div
+                      key={item.instructorId}
+                      className="flex items-center justify-between rounded-md border p-3"
+                    >
+                      <span className="text-sm">
+                        {item.instructor?.name ||
+                          `Instructor #${item.instructorId}`}
+                      </span>
+
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        onClick={() =>
+                          handleRemoveCoInstructor(item.instructorId)
+                        }
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  No co-instructors assigned.
+                </p>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
