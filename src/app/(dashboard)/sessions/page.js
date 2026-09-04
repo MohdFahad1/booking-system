@@ -46,6 +46,7 @@ export default function SessionsPage() {
 
   const [open, setOpen] = useState(false);
   const [editingSession, setEditingSession] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const [form, setForm] = useState({
     classId: "",
@@ -55,6 +56,9 @@ export default function SessionsPage() {
     endTime: "",
     duration: "",
     capacity: "",
+    recurring: false,
+    frequency: "WEEKLY",
+    occurrences: "4",
   });
 
   async function loadData() {
@@ -70,11 +74,6 @@ export default function SessionsPage() {
       setSessions(sessionsResponse.data.sessions || []);
       setClasses(classesResponse.data.classes || []);
 
-      /*
-       * Instructor and room endpoints are staff-only.
-       * We load them separately so one failed request
-       * does not break the sessions table.
-       */
       try {
         const response = await axios.get("/api/instructors");
         setInstructors(response.data.instructors || []);
@@ -108,6 +107,9 @@ export default function SessionsPage() {
       endTime: "",
       duration: "",
       capacity: "",
+      recurring: false,
+      frequency: "WEEKLY",
+      occurrences: "4",
     });
 
     setEditingSession(null);
@@ -129,6 +131,9 @@ export default function SessionsPage() {
       endTime: formatDateTimeLocal(session.endTime),
       duration: String(session.duration),
       capacity: String(session.capacity),
+      recurring: false,
+      frequency: "WEEKLY",
+      occurrences: "4",
     });
 
     setOpen(true);
@@ -169,21 +174,106 @@ export default function SessionsPage() {
     event.preventDefault();
 
     try {
+      setSubmitting(true);
       setError("");
 
-      const payload = {
-        classId: Number(form.classId),
-        primaryInstructorId: Number(form.primaryInstructorId),
-        roomId: Number(form.roomId),
-        startTime: new Date(form.startTime).toISOString(),
-        endTime: new Date(form.endTime).toISOString(),
-        duration: Number(form.duration),
-        capacity: Number(form.capacity),
-      };
+      if (!form.classId) {
+        setError("Please select a class.");
+        return;
+      }
+
+      if (!form.primaryInstructorId) {
+        setError("Please select a primary instructor.");
+        return;
+      }
+
+      if (!form.roomId) {
+        setError("Please select a room.");
+        return;
+      }
+
+      if (!form.startTime || !form.endTime) {
+        setError("Start time and end time are required.");
+        return;
+      }
+
+      const start = new Date(form.startTime);
+      const end = new Date(form.endTime);
+
+      if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+        setError("Invalid start time or end time.");
+        return;
+      }
+
+      if (end <= start) {
+        setError("End time must be after start time.");
+        return;
+      }
+
+      if (
+        !form.duration ||
+        !Number.isInteger(Number(form.duration)) ||
+        Number(form.duration) <= 0
+      ) {
+        setError("Duration must be a positive integer.");
+        return;
+      }
+
+      if (
+        !form.capacity ||
+        !Number.isInteger(Number(form.capacity)) ||
+        Number(form.capacity) <= 0
+      ) {
+        setError("Capacity must be a positive integer.");
+        return;
+      }
 
       if (editingSession) {
+        const payload = {
+          classId: Number(form.classId),
+          primaryInstructorId: Number(form.primaryInstructorId),
+          roomId: Number(form.roomId),
+          startTime: start.toISOString(),
+          endTime: end.toISOString(),
+          duration: Number(form.duration),
+          capacity: Number(form.capacity),
+        };
+
         await axios.patch(`/api/sessions/${editingSession.id}`, payload);
+      } else if (form.recurring) {
+        const occurrences = Number(form.occurrences);
+
+        if (
+          !Number.isInteger(occurrences) ||
+          occurrences < 1 ||
+          occurrences > 100
+        ) {
+          setError("Occurrences must be between 1 and 100.");
+          return;
+        }
+
+        await axios.post("/api/sessions/recurring", {
+          classId: Number(form.classId),
+          primaryInstructorId: Number(form.primaryInstructorId),
+          roomId: Number(form.roomId),
+          startTime: start.toISOString(),
+          endTime: end.toISOString(),
+          duration: Number(form.duration),
+          capacity: Number(form.capacity),
+          frequency: form.frequency,
+          occurrences,
+        });
       } else {
+        const payload = {
+          classId: Number(form.classId),
+          primaryInstructorId: Number(form.primaryInstructorId),
+          roomId: Number(form.roomId),
+          startTime: start.toISOString(),
+          endTime: end.toISOString(),
+          duration: Number(form.duration),
+          capacity: Number(form.capacity),
+        };
+
         await axios.post("/api/sessions", payload);
       }
 
@@ -192,6 +282,8 @@ export default function SessionsPage() {
       await loadData();
     } catch (err) {
       setError(err.response?.data?.error || "Failed to save session.");
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -237,6 +329,7 @@ export default function SessionsPage() {
       await loadData();
 
       const response = await axios.get("/api/sessions");
+
       const updatedSession = (response.data.sessions || []).find(
         (item) => item.id === selectedSession.id,
       );
@@ -264,6 +357,7 @@ export default function SessionsPage() {
       await loadData();
 
       const response = await axios.get("/api/sessions");
+
       const updatedSession = (response.data.sessions || []).find(
         (item) => item.id === selectedSession.id,
       );
@@ -448,8 +542,77 @@ export default function SessionsPage() {
                 </div>
               </div>
 
-              <Button type="submit" className="w-full">
-                {editingSession ? "Update Session" : "Create Session"}
+              {!editingSession && (
+                <div className="space-y-4 rounded-lg border p-4">
+                  <div className="flex items-center gap-2">
+                    <input
+                      id="recurring"
+                      type="checkbox"
+                      checked={form.recurring}
+                      onChange={(event) =>
+                        updateField("recurring", event.target.checked)
+                      }
+                      className="h-4 w-4"
+                    />
+
+                    <Label htmlFor="recurring">Recurring Session</Label>
+                  </div>
+
+                  {form.recurring && (
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label>Frequency</Label>
+
+                        <Select
+                          value={form.frequency}
+                          onValueChange={(value) =>
+                            updateField("frequency", value)
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select frequency" />
+                          </SelectTrigger>
+
+                          <SelectContent>
+                            <SelectItem value="DAILY">Daily</SelectItem>
+
+                            <SelectItem value="WEEKLY">Weekly</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="occurrences">Occurrences</Label>
+
+                        <Input
+                          id="occurrences"
+                          type="number"
+                          min="1"
+                          max="100"
+                          value={form.occurrences}
+                          onChange={(event) =>
+                            updateField("occurrences", event.target.value)
+                          }
+                          required
+                        />
+
+                        <p className="text-xs text-muted-foreground">
+                          Enter a number from 1 to 100.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <Button type="submit" className="w-full" disabled={submitting}>
+                {submitting
+                  ? "Saving..."
+                  : editingSession
+                    ? "Update Session"
+                    : form.recurring
+                      ? "Create Recurring Sessions"
+                      : "Create Session"}
               </Button>
             </form>
           </DialogContent>
@@ -536,6 +699,7 @@ export default function SessionsPage() {
                           variant="outline"
                           size="icon"
                           onClick={() => openEditDialog(session)}
+                          title="Edit Session"
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -544,6 +708,7 @@ export default function SessionsPage() {
                           variant="destructive"
                           size="icon"
                           onClick={() => handleDelete(session.id)}
+                          title="Delete Session"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
