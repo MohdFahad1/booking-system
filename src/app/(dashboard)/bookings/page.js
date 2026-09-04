@@ -28,7 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Download } from "lucide-react";
+import { Search, Download, History } from "lucide-react";
 
 export default function BookingsPage() {
   const [bookings, setBookings] = useState([]);
@@ -56,6 +56,12 @@ export default function BookingsPage() {
     memberId: "",
     sessionId: "",
   });
+
+  // Booking history states
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [history, setHistory] = useState([]);
+  const [selectedBooking, setSelectedBooking] = useState(null);
 
   async function fetchData() {
     try {
@@ -182,6 +188,25 @@ export default function BookingsPage() {
     }
   }
 
+  async function handleViewHistory(booking) {
+    try {
+      setHistoryLoading(true);
+      setError("");
+      setSelectedBooking(booking);
+      setHistoryOpen(true);
+      setHistory([]);
+
+      const response = await axios.get(`/api/bookings/${booking.id}/history`);
+
+      setHistory(response.data.history || []);
+    } catch (err) {
+      setError(err.response?.data?.error || "Failed to load booking history.");
+      setHistory([]);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }
+
   function getStatusVariant(status) {
     if (status === "BOOKED" || status === "ATTENDED") {
       return "default";
@@ -196,6 +221,7 @@ export default function BookingsPage() {
 
   return (
     <div className="p-6">
+      {/* Header */}
       <div className="mb-6 flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Bookings</h1>
@@ -204,6 +230,7 @@ export default function BookingsPage() {
           </p>
         </div>
 
+        {/* Create Booking Dialog */}
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button>Create Booking</Button>
@@ -215,6 +242,7 @@ export default function BookingsPage() {
             </DialogHeader>
 
             <form onSubmit={handleCreateBooking} className="space-y-5">
+              {/* Member */}
               <div className="space-y-2">
                 <Label>Member</Label>
 
@@ -239,6 +267,7 @@ export default function BookingsPage() {
                 </Select>
               </div>
 
+              {/* Session */}
               <div className="space-y-2">
                 <Label>Session</Label>
 
@@ -273,6 +302,7 @@ export default function BookingsPage() {
         </Dialog>
       </div>
 
+      {/* Booking Finder */}
       <div className="mb-6 rounded-lg border p-4">
         <div className="mb-4 flex items-center justify-between">
           <div>
@@ -282,6 +312,7 @@ export default function BookingsPage() {
             </p>
           </div>
 
+          {/* Export CSV */}
           <Button
             variant="outline"
             size="sm"
@@ -316,10 +347,13 @@ export default function BookingsPage() {
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {/* Member Search */}
           <div className="space-y-2">
             <Label>Member</Label>
+
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+
               <Input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
@@ -329,8 +363,10 @@ export default function BookingsPage() {
             </div>
           </div>
 
+          {/* Class Filter */}
           <div className="space-y-2">
             <Label>Class</Label>
+
             <Select value={classFilter} onValueChange={setClassFilter}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="All classes" />
@@ -338,6 +374,7 @@ export default function BookingsPage() {
 
               <SelectContent>
                 <SelectItem value="all">All classes</SelectItem>
+
                 {classes.map((item) => (
                   <SelectItem key={item.id} value={String(item.id)}>
                     {item.title}
@@ -347,8 +384,10 @@ export default function BookingsPage() {
             </Select>
           </div>
 
+          {/* Session Filter */}
           <div className="space-y-2">
             <Label>Session</Label>
+
             <Select value={sessionFilter} onValueChange={setSessionFilter}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="All sessions" />
@@ -356,6 +395,7 @@ export default function BookingsPage() {
 
               <SelectContent>
                 <SelectItem value="all">All sessions</SelectItem>
+
                 {sessions.map((session) => (
                   <SelectItem key={session.id} value={String(session.id)}>
                     Session #{session.id}
@@ -365,8 +405,10 @@ export default function BookingsPage() {
             </Select>
           </div>
 
+          {/* Status Filter */}
           <div className="space-y-2">
             <Label>Status</Label>
+
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="All statuses" />
@@ -384,6 +426,7 @@ export default function BookingsPage() {
           </div>
         </div>
 
+        {/* Filter Buttons */}
         <div className="mt-4 flex justify-end gap-2">
           <Button
             variant="outline"
@@ -410,12 +453,14 @@ export default function BookingsPage() {
         </div>
       </div>
 
+      {/* Error */}
       {error && (
         <div className="mb-4 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
           {error}
         </div>
       )}
 
+      {/* Bookings Table */}
       {loading ? (
         <div className="rounded-lg border p-8 text-center text-sm text-muted-foreground">
           Loading bookings...
@@ -441,6 +486,7 @@ export default function BookingsPage() {
             <TableBody>
               {bookings.map((booking) => (
                 <TableRow key={booking.id}>
+                  {/* Member */}
                   <TableCell>
                     <div>
                       <p className="font-medium">
@@ -453,10 +499,12 @@ export default function BookingsPage() {
                     </div>
                   </TableCell>
 
+                  {/* Class */}
                   <TableCell>
                     {booking.session?.class?.title || "Unknown"}
                   </TableCell>
 
+                  {/* Session */}
                   <TableCell>
                     <div>
                       <p className="font-medium">
@@ -471,20 +519,34 @@ export default function BookingsPage() {
                     </div>
                   </TableCell>
 
+                  {/* Status */}
                   <TableCell>
                     <Badge variant={getStatusVariant(booking.status)}>
                       {booking.status}
                     </Badge>
                   </TableCell>
 
+                  {/* Created */}
                   <TableCell>
                     {booking.createdAt
                       ? new Date(booking.createdAt).toLocaleDateString()
                       : "-"}
                   </TableCell>
 
+                  {/* Actions */}
                   <TableCell>
                     <div className="flex justify-end gap-2">
+                      {/* History */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleViewHistory(booking)}
+                      >
+                        <History className="mr-2 h-4 w-4" />
+                        History
+                      </Button>
+
+                      {/* Cancel */}
                       {(booking.status === "BOOKED" ||
                         booking.status === "WAITLISTED") && (
                         <Button
@@ -496,6 +558,7 @@ export default function BookingsPage() {
                         </Button>
                       )}
 
+                      {/* Attendance */}
                       {booking.status === "BOOKED" && (
                         <>
                           <Button
@@ -528,6 +591,7 @@ export default function BookingsPage() {
         </div>
       )}
 
+      {/* Pagination */}
       <div className="mt-4 flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
           Page {page} of {Math.max(1, Math.ceil(total / pageSize))}
@@ -553,6 +617,60 @@ export default function BookingsPage() {
           </Button>
         </div>
       </div>
+
+      {/* Booking History Dialog */}
+      <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              Booking History
+              {selectedBooking && ` — #${selectedBooking.id}`}
+            </DialogTitle>
+          </DialogHeader>
+
+          {historyLoading ? (
+            <div className="py-8 text-center text-sm text-muted-foreground">
+              Loading history...
+            </div>
+          ) : history.length === 0 ? (
+            <div className="py-8 text-center text-sm text-muted-foreground">
+              No history found.
+            </div>
+          ) : (
+            <div className="max-h-[400px] space-y-3 overflow-y-auto">
+              {history.map((item) => (
+                <div key={item.id} className="rounded-lg border p-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="font-medium">{item.action}</p>
+
+                      <p className="text-sm text-muted-foreground">
+                        {item.oldStatus || "-"} → {item.newStatus || "-"}
+                      </p>
+                    </div>
+
+                    <p className="text-xs text-muted-foreground">
+                      {item.createdAt
+                        ? new Date(item.createdAt).toLocaleString()
+                        : "-"}
+                    </p>
+                  </div>
+
+                  {item.note && (
+                    <p className="mt-2 text-sm">
+                      <span className="font-medium">Note:</span> {item.note}
+                    </p>
+                  )}
+
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Actor User ID: {item.actorUserId}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
