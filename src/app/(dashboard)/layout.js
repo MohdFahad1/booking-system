@@ -9,6 +9,7 @@ import {
   ClipboardList,
   Bell,
   DoorOpen,
+  UserCog,
 } from "lucide-react";
 
 import {
@@ -35,15 +36,12 @@ export default async function DashboardLayout({ children }) {
   const isStaff = user?.role === "STAFF";
   const isInstructor = user?.role === "INSTRUCTOR";
 
-  const commonNavigation = [
+  const staffNavigation = [
     {
       title: "Dashboard",
       href: "/dashboard",
       icon: LayoutDashboard,
     },
-  ];
-
-  const staffNavigation = [
     {
       title: "Classes",
       href: "/classes",
@@ -74,23 +72,27 @@ export default async function DashboardLayout({ children }) {
       href: "/alerts",
       icon: Bell,
     },
+    {
+      title: "Users",
+      href: "/users",
+      icon: UserCog,
+    },
   ];
 
   const instructorNavigation = [
     {
       title: "My Sessions",
-      href: "/sessions",
+      href: "/my-sessions",
       icon: CalendarDays,
     },
     {
       title: "My Bookings",
-      href: "/bookings",
+      href: "/my-bookings",
       icon: ClipboardList,
     },
   ];
 
   const navigation = [
-    ...commonNavigation,
     ...(isStaff ? staffNavigation : []),
     ...(isInstructor ? instructorNavigation : []),
   ];
@@ -101,7 +103,6 @@ export default async function DashboardLayout({ children }) {
         <SidebarHeader className="border-b px-6 py-4">
           <div>
             <h2 className="text-lg font-semibold">Booking System</h2>
-
             <p className="text-xs text-muted-foreground">Studio Management</p>
           </div>
         </SidebarHeader>

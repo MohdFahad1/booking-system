@@ -232,9 +232,7 @@ export default function BookingsPage() {
 
         {/* Create Booking Dialog */}
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button>Create Booking</Button>
-          </DialogTrigger>
+          <DialogTrigger render={<Button />}>Create Booking</DialogTrigger>
 
           <DialogContent className="sm:max-w-lg">
             <DialogHeader>
